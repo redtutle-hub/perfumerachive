@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Perfumer's OS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cream:#f7f4ef;--cream2:#f0ece4;--cream3:#e8e2d8;
+  --ink:#1a1714;--ink2:#5a5650;--ink3:#9a9690;
+  --border:#ddd9d2;--border2:#ccc7be;
+  --accent:#1a1714;
+  --warm:#c9a96e;--warm2:#e8d5b4;
+  --radius:2px;--radius-sm:2px;--radius-lg:3px;
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'DM Sans','Helvetica Neue',sans-serif;
+}
+*{font-family:var(--sans)}
+body{background:var(--cream);color:var(--ink);font-size:13px;line-height:1.6}
+#app{display:flex;height:100vh;overflow:hidden}
+
+/* NAV */
+#nav{width:220px;background:var(--ink);border-right:none;display:flex;flex-direction:column;flex-shrink:0}
+#nav-header{padding:28px 22px 22px;border-bottom:1px solid rgba(255,255,255,.08)}
+#nav-header h1{font-family:var(--serif);font-size:15px;font-weight:400;color:#f7f4ef;letter-spacing:.01em;font-style:italic}
+#nav-header p{font-size:10px;color:rgba(247,244,239,.35);margin-top:4px;letter-spacing:.12em;text-transform:uppercase}
+#nav-items{padding:12px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 22px;cursor:pointer;font-size:11px;font-weight:400;color:rgba(247,244,239,.45);transition:all .2s;letter-spacing:.08em;text-transform:uppercase;border-left:1px solid transparent;user-select:none}
+.nav-item:hover{color:rgba(247,244,239,.85);background:rgba(255,255,255,.04)}
+.nav-item.active{color:#f7f4ef;background:rgba(255,255,255,.07);border-left-color:var(--warm)}
+.nav-icon{font-size:13px;width:16px;text-align:center;flex-shrink:0;opacity:.6}
+.nav-item.active .nav-icon{opacity:1}
+
+/* CONTENT */
+#content{flex:1;overflow:hidden;display:flex;flex-direction:column;background:var(--cream)}
+.page{display:none;flex:1;overflow-y:auto;padding:40px 44px}
+.page.active{display:block}
+
+/* PAGE HEADER */
+.ph{margin-bottom:32px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.ph h2{font-family:var(--serif);font-size:32px;font-weight:400;letter-spacing:-.01em;color:var(--ink);margin-bottom:6px}
+.ph p{font-size:12px;color:var(--ink3);letter-spacing:.04em;text-transform:uppercase}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 24px;margin-bottom:18px}
+.card-title{font-size:9px;font-weight:500;color:var(--ink3);letter-spacing:.14em;text-transform:uppercase;margin-bottom:16px}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+/* FORM */
+label{font-size:10px;font-weight:500;color:var(--ink3);display:block;margin-bottom:5px;margin-top:14px;letter-spacing:.1em;text-transform:uppercase}
+label:first-child{margin-top:0}
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--cream);color:var(--ink);font-size:13px;font-family:var(--sans);outline:none;transition:border .15s,background .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--ink);background:#fff}
+textarea{resize:vertical;min-height:72px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:#fff;color:var(--ink);font-size:11px;font-family:var(--sans);cursor:pointer;transition:all .2s;font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+.btn:hover{background:var(--cream2);border-color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.btn.primary:hover{background:#333}
+.btn.danger{color:#9b2020;border-color:#ddb9b9}
+.btn.danger:hover{background:#fdf4f4}
+.btn-row{display:flex;gap:8px;margin-top:18px;flex-wrap:wrap}
+
+/* METRICS */
+.metric{padding:18px;background:var(--cream2);border-radius:var(--radius-lg);text-align:center;border:1px solid var(--border)}
+.metric-val{font-family:var(--serif);font-size:32px;font-weight:400;color:var(--ink);font-style:italic}
+.metric-lbl{font-size:9px;color:var(--ink3);margin-top:4px;letter-spacing:.12em;text-transform:uppercase}
+
+/* TAGS & PILLS */
+.tag{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:500;cursor:default;letter-spacing:.04em}
+.tag-top{background:#fdf3e0;color:#8a5c00;border:1px solid #f0d9a0}
+.tag-mid{background:#e8f5ec;color:#1a5c30;border:1px solid #b8dfc4}
+.tag-base{background:#ede8f5;color:#4a2d7a;border:1px solid #c8b8e8}
+.tag-gray{background:var(--cream2);color:var(--ink2);border:1px solid var(--border)}
+.tag-blue{background:#e8eef8;color:#1a3060;border:1px solid #b8c8e8}
+.search-row{display:flex;gap:8px;margin-bottom:20px;align-items:center}
+.search-row input{flex:1}
+
+/* LIST ITEMS */
+.list-item{padding:16px 18px;border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:8px;cursor:pointer;transition:all .2s;display:flex;align-items:flex-start;gap:14px;background:#fff}
+.list-item:hover{background:var(--cream2);border-color:var(--border2)}
+.list-title{font-size:13px;font-weight:500;margin-bottom:3px;color:var(--ink)}
+.list-sub{font-size:11px;color:var(--ink2)}
+.pill{padding:2px 9px;border-radius:20px;font-size:10px;font-weight:500;letter-spacing:.03em}
+.pill-T{background:#fdf3e0;color:#8a5c00}
+.pill-M{background:#e8f5ec;color:#1a5c30}
+.pill-B{background:#ede8f5;color:#4a2d7a}
+.empty{text-align:center;padding:48px;color:var(--ink3);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,23,20,.55);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius-lg);padding:32px;width:520px;max-height:88vh;overflow-y:auto;border:1px solid var(--border)}
+.modal h3{font-family:var(--serif);font-size:22px;font-weight:400;margin-bottom:22px;font-style:italic;color:var(--ink)}
+.modal-footer{display:flex;gap:8px;margin-top:22px;padding-top:18px;border-top:1px solid var(--border)}
+
+/* MISC */
+.stack-bar{height:8px;border-radius:20px;overflow:hidden;display:flex;margin:12px 0}
+.stack-seg{display:flex;align-items:center;justify-content:center;font-size:0;transition:width .4s}
+.version-badge{display:inline-flex;align-items:center;padding:2px 9px;background:var(--cream2);color:var(--ink2);border-radius:20px;font-size:10px;margin-left:8px;font-weight:500;border:1px solid var(--border);letter-spacing:.04em}
+.slider-row{display:grid;grid-template-columns:120px 1fr 36px;align-items:center;gap:10px;margin:6px 0}
+.slider-lbl{font-size:11px;color:var(--ink2)}
+.slider-val{font-size:11px;font-weight:500;text-align:right;color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--ink)}
+.formula-hdr{display:grid;grid-template-columns:1fr 80px 70px 80px 28px;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.formula-hdr span{font-size:9px;color:var(--ink3);font-weight:500;letter-spacing:.1em;text-transform:uppercase}
+.formula-row{display:grid;grid-template-columns:1fr 80px 70px 80px 28px;gap:8px;align-items:center;margin:5px 0}
+.del-btn{width:26px;height:26px;border:none;background:none;color:var(--ink3);cursor:pointer;font-size:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;padding:0;transition:all .15s}
+.del-btn:hover{background:#fdf4f4;color:#9b2020}
+.aging-milestone{flex:1;padding:10px;border-radius:var(--radius-sm);text-align:center}
+.aging-done{background:#e8f5ec;border:1px solid #b8dfc4}
+.aging-pending{background:var(--cream2);border:1px solid var(--border)}
+.frag-link{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:10px;color:var(--ink2);text-decoration:none;background:var(--cream2);font-weight:500;letter-spacing:.05em;text-transform:uppercase;transition:all .2s}
+.frag-link:hover{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.accord-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 11px;border-radius:20px;font-size:11px;background:var(--cream2);color:var(--ink);font-weight:500;border:1px solid var(--border2)}
+.accord-chip .rm{cursor:pointer;margin-left:2px;opacity:.45}
+.accord-chip .rm:hover{opacity:1}
+.compat-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.gc-preset-tag{display:inline-flex;align-items:center;padding:4px 11px;border-radius:20px;font-size:10px;font-weight:500;background:var(--cream2);color:var(--ink2);border:1px solid var(--border);cursor:pointer;transition:all .2s;letter-spacing:.04em}
+.gc-preset-tag:hover{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+.tab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px}
+.tab{padding:9px 18px;font-size:10px;cursor:pointer;color:var(--ink3);border-bottom:1px solid transparent;transition:.15s;font-weight:500;letter-spacing:.08em;text-transform:uppercase}
+.tab.active{color:var(--ink);border-bottom-color:var(--ink)}
+
+/* ── MOBILE NAV ─────────────────────────────────── */
+#mobile-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:var(--ink);border-top:1px solid rgba(255,255,255,.1);padding:8px 12px 10px;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+#mobile-bar-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mob-quick{display:flex;gap:6px;flex:1}
+.mob-qbtn{flex:1;padding:9px 4px;border:1px solid rgba(255,255,255,.15);border-radius:4px;background:transparent;color:rgba(247,244,239,.7);font-family:var(--sans);font-size:9px;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;transition:all .2s;text-align:center}
+.mob-qbtn.active{background:rgba(255,255,255,.12);color:#f7f4ef;border-color:rgba(255,255,255,.3)}
+.mob-qbtn:active{opacity:.7}
+#mob-menu-btn{width:42px;height:42px;border:1px solid rgba(255,255,255,.2);border-radius:4px;background:transparent;color:#f7f4ef;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+#mobile-menu-drawer{display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.08)}
+#mobile-menu-drawer.open{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.mob-menu-item{padding:10px 12px;border:1px solid rgba(255,255,255,.1);border-radius:3px;background:transparent;color:rgba(247,244,239,.6);font-family:var(--sans);font-size:10px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;text-align:left;display:flex;align-items:center;gap:7px;transition:all .2s}
+.mob-menu-item.active{background:rgba(255,255,255,.1);color:#f7f4ef;border-color:rgba(255,255,255,.25)}
+.mob-menu-item:active{opacity:.7}
+
+/* ── HOME PAGE ───────────────────────────────────── */
+#page-home .home-hero{padding:32px 0 24px;border-bottom:1px solid var(--border);margin-bottom:28px}
+#page-home .home-hero h1{font-family:var(--serif);font-size:36px;font-weight:400;font-style:italic;line-height:1.15;margin-bottom:10px}
+#page-home .home-hero p{font-size:13px;color:var(--ink2);letter-spacing:.04em}
+.home-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px}
+.home-stat{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;text-align:center}
+.home-stat-val{font-family:var(--serif);font-size:30px;font-weight:400;font-style:italic;color:var(--ink)}
+.home-stat-lbl{font-size:9px;color:var(--ink3);letter-spacing:.14em;text-transform:uppercase;margin-top:4px}
+.home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:28px}
+.home-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:14px}
+.home-card:hover{border-color:var(--border2);background:var(--cream2)}
+.home-card-icon{font-size:22px;width:36px;text-align:center;flex-shrink:0;color:var(--ink2)}
+.home-card-title{font-family:var(--serif);font-size:13px;font-weight:400;color:var(--ink);margin-bottom:2px}
+.home-card-sub{font-size:10px;color:var(--ink3);letter-spacing:.04em}
+.home-recent{margin-bottom:28px}
+.home-recent-title{font-size:9px;letter-spacing:.2em;color:var(--ink3);text-transform:uppercase;margin-bottom:12px}
+.home-recent-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.home-recent-item:hover .home-recent-name{color:var(--ink2)}
+.home-recent-name{font-size:13px;font-weight:500;color:var(--ink);flex:1;transition:color .15s}
+.home-recent-meta{font-size:10px;color:var(--ink3)}
+.home-recent-badge{padding:2px 8px;border-radius:20px;font-size:9px;font-weight:500;background:var(--cream2);border:1px solid var(--border);color:var(--ink2)}
+
+@media(max-width:768px){
+  #nav{display:none!important}
+  #mobile-bar{display:block}
+  #app{flex-direction:column}
+  #content{padding-bottom:80px}
+  .page{padding:20px 16px}
+  .grid2{grid-template-columns:1fr}
+  .grid3{grid-template-columns:1fr 1fr}
+  .modal{width:calc(100vw - 32px);padding:22px 18px}
+  .ph h2{font-size:24px}
+  #page-home .home-hero h1{font-size:26px}
+  .home-stats{grid-template-columns:repeat(3,1fr);gap:8px}
+  .home-stat{padding:12px 8px}
+  .home-stat-val{font-size:22px}
+  .formula-hdr,.formula-row{grid-template-columns:1fr 70px 55px 70px 26px;gap:5px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- MOBILE BOTTOM BAR -->
+<div id="mobile-bar">
+  <div id="mobile-bar-top">
+    <div class="mob-quick">
+      <button class="mob-qbtn active" data-page="home" onclick="mobNav('home',this)">◈ 홈</button>
+      <button class="mob-qbtn" data-page="db" onclick="mobNav('db',this)">◉ 향료</button>
+      <button class="mob-qbtn" data-page="formula" onclick="mobNav('formula',this)">⬢ 레시피</button>
+    </div>
+    <button id="mob-menu-btn" onclick="toggleMobMenu()">☰</button>
+  </div>
+  <div id="mobile-menu-drawer">
+    <button class="mob-menu-item" data-page="reference" onclick="mobNav('reference',this)"><span>◎</span>레퍼런스</button>
+    <button class="mob-menu-item" data-page="accord" onclick="mobNav('accord',this)"><span>⬡</span>어코드</button>
+    <button class="mob-menu-item" data-page="aging" onclick="mobNav('aging',this)"><span>◷</span>숙성 관리</button>
+    <button class="mob-menu-item" data-page="gcms" onclick="mobNav('gcms',this)"><span>∿</span>GC-MS</button>
+    <button class="mob-menu-item" data-page="vault" onclick="mobNav('vault',this)"><span>◫</span>지식 창고</button>
+    <button class="mob-menu-item" data-page="dashboard" onclick="mobNav('dashboard',this)"><span>◈</span>대시보드</button>
+  </div>
+</div>
+
+<!-- NAV -->
+<div id="nav">
+  <div id="nav-header">
+    <h1>The Perfumer's OS</h1>
+    <p>향기를 설계하는 아카이브</p>
+  </div>
+  <div id="nav-items">
+    <div class="nav-item active" data-page="home"><span class="nav-icon">⌂</span>홈</div>
+    <div class="nav-item" data-page="dashboard"><span class="nav-icon">◈</span>대시보드</div>
+    <div class="nav-item" data-page="reference"><span class="nav-icon">◎</span>레퍼런스 아카이브</div>
+    <div class="nav-item" data-page="db"><span class="nav-icon">◉</span>향료 데이터베이스</div>
+    <div class="nav-item" data-page="accord"><span class="nav-icon">⬡</span>어코드 워크숍</div>
+    <div class="nav-item" data-page="formula"><span class="nav-icon">⬢</span>조향 레시피</div>
+    <div class="nav-item" data-page="aging"><span class="nav-icon">◷</span>숙성 관리</div>
+    <div class="nav-item" data-page="gcms"><span class="nav-icon">∿</span>GC-MS 시뮬레이터</div>
+    <div class="nav-item" data-page="vault"><span class="nav-icon">◫</span>지식 창고</div>
+  </div>
+  <div style="padding:14px 22px 20px;border-top:1px solid rgba(255,255,255,.08)">
+    <div id="sync-status" style="font-size:10px;letter-spacing:.08em;min-height:14px;transition:color .3s"></div>
+    <div style="font-size:9px;color:rgba(247,244,239,.2);margin-top:4px;letter-spacing:.06em;line-height:1.5">
+      Supabase 미연결 시<br>로컬 저장됩니다
+    </div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div id="content">
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="home-hero">
+    <h1>The Perfumer's<br>Operating System</h1>
+    <p>향기를 설계하는 아카이브</p>
+  </div>
+  <div class="home-stats">
+    <div class="home-stat"><div class="home-stat-val" id="hs-ing">0</div><div class="home-stat-lbl">향료</div></div>
+    <div class="home-stat"><div class="home-stat-val" id="hs-acc">0</div><div class="home-stat-lbl">어코드</div></div>
+    <div class="home-stat"><div class="home-stat-val" id="hs-fm">0</div><div class="home-stat-lbl">레시피</div></div>
+  </div>
+  <div class="home-grid">
+    <div class="home-card" onclick="navTo('db')"><span class="home-card-icon">◉</span><div><div class="home-card-title">향료 데이터베이스</div><div class="home-card-sub">원료 기록 & 상성 관리</div></div></div>
+    <div class="home-card" onclick="navTo('formula')"><span class="home-card-icon">⬢</span><div><div class="home-card-title">조향 레시피</div><div class="home-card-sub">레시피 설계 & 버전 관리</div></div></div>
+    <div class="home-card" onclick="navTo('accord')"><span class="home-card-icon">⬡</span><div><div class="home-card-title">어코드 워크숍</div><div class="home-card-sub">베이스 어코드 제작</div></div></div>
+    <div class="home-card" onclick="navTo('reference')"><span class="home-card-icon">◎</span><div><div class="home-card-title">레퍼런스 아카이브</div><div class="home-card-sub">기존 향수 분석</div></div></div>
+    <div class="home-card" onclick="navTo('aging')"><span class="home-card-icon">◷</span><div><div class="home-card-title">숙성 관리</div><div class="home-card-sub">단계별 변화 기록</div></div></div>
+    <div class="home-card" onclick="navTo('gcms')"><span class="home-card-icon">∿</span><div><div class="home-card-title">GC-MS 시뮬레이터</div><div class="home-card-sub">분자 기반 크로마토그램</div></div></div>
+    <div class="home-card" onclick="navTo('vault')"><span class="home-card-icon">◫</span><div><div class="home-card-title">지식 창고</div><div class="home-card-sub">용어 & 개념 아카이브</div></div></div>
+    <div class="home-card" onclick="navTo('dashboard')"><span class="home-card-icon">◈</span><div><div class="home-card-title">대시보드</div><div class="home-card-sub">현황 한눈에 보기</div></div></div>
+  </div>
+  <div class="home-recent">
+    <div class="home-recent-title">최근 레시피</div>
+    <div id="hs-recent-fm"></div>
+  </div>
+  <div class="home-recent">
+    <div class="home-recent-title">숙성 중</div>
+    <div id="hs-aging"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page" id="page-dashboard">
+  <div class="ph">
+    <h2>Dashboard</h2>
+    <p>오늘도 좋은 향을 설계하세요</p>
+  </div>
+  <div class="grid3" style="margin-bottom:16px">
+    <div class="metric"><div class="metric-val" id="s-ing">0</div><div class="metric-lbl">등록된 향료</div></div>
+    <div class="metric"><div class="metric-val" id="s-acc">0</div><div class="metric-lbl">어코드</div></div>
+    <div class="metric"><div class="metric-val" id="s-fm">0</div><div class="metric-lbl">레시피</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><div class="card-title">숙성 중</div><div id="d-aging"></div></div>
+    <div class="card"><div class="card-title">최근 향료</div><div id="d-ing"></div></div>
+  </div>
+  <div class="card"><div class="card-title">최근 레시피</div><div id="d-fm"></div></div>
+</div>
+
+<!-- REFERENCE -->
+<div class="page" id="page-reference">
+  <div class="ph"><h2>레퍼런스 아카이브</h2><p>기존 향수를 분석하고 학습 데이터로 쌓으세요.</p></div>
+  <div class="search-row">
+    <input type="text" id="ref-q" placeholder="향수명, 브랜드 검색...">
+    <button class="btn primary" onclick="openRefModal()">+ 향수 추가</button>
+  </div>
+  <div id="ref-list"></div>
+</div>
+
+<!-- DB -->
+<div class="page" id="page-db">
+  <div class="ph"><h2>향료 데이터베이스</h2><p>모든 모듈이 공유하는 중앙 향료 DB입니다.</p></div>
+  <div class="search-row">
+    <input type="text" id="ing-q" placeholder="향료명, 태그 검색...">
+    <select id="ing-note-f" style="width:110px">
+      <option value="">전체 노트</option><option value="T">탑</option><option value="M">미들</option><option value="B">베이스</option>
+    </select>
+    <button class="btn primary" onclick="openIngModal()">+ 향료 추가</button>
+  </div>
+  <div id="ing-list"></div>
+</div>
+
+<!-- ACCORD -->
+<div class="page" id="page-accord">
+
+  <!-- LIST VIEW -->
+  <div id="acc-list-view">
+    <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div><h2>어코드 워크숍</h2><p>저장된 어코드를 클릭하거나 새로 만들어보세요.</p></div>
+      <button class="btn primary" style="margin-top:4px" onclick="openAccEditor(null)">+ 새 어코드</button>
+    </div>
+    <div id="acc-grid"></div>
+  </div>
+
+  <!-- EDITOR VIEW -->
+  <div id="acc-editor-view" style="display:none">
+    <div class="ph" style="display:flex;align-items:center;gap:12px">
+      <button class="btn" style="font-size:12px;padding:5px 12px" onclick="closeAccEditor()">← 목록</button>
+      <div><h2 id="acc-editor-title">새 어코드</h2><p id="acc-editor-sub">향료를 조합하고 레이더 차트로 시각화하세요.</p></div>
+    </div>
+    <div class="grid2" style="align-items:start">
+      <div>
+        <div class="card">
+          <div class="card-title">어코드 설계</div>
+          <label>이름</label><input type="text" id="acc-name" placeholder="예: My Base Accord A">
+          <label>향료 선택 (최대 5개)</label>
+          <div id="acc-chips" style="display:flex;flex-wrap:wrap;gap:6px;min-height:34px;padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--cream2);margin-bottom:6px"></div>
+          <input type="text" id="acc-ing-q" placeholder="향료 검색...">
+          <div id="acc-ing-drop" style="display:none;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;max-height:130px;overflow-y:auto;margin-top:3px"></div>
+          <div id="acc-sliders" style="margin-top:14px"></div>
+          <hr class="divider">
+          <div class="card-title">평가 지표 <button class="btn" style="font-size:11px;padding:3px 9px;margin-left:8px" onclick="addMetric()">+ 추가</button></div>
+          <div id="acc-metrics"></div>
+          <div class="btn-row">
+            <button class="btn primary" onclick="saveAccord()">저장</button>
+            <button class="btn" onclick="closeAccEditor()">취소</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="position:sticky;top:28px">
+        <div class="card-title">레이더 차트</div>
+        <div style="display:flex;justify-content:center"><canvas id="acc-radar" width="240" height="240"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FORMULA -->
+<div class="page" id="page-formula">
+
+  <!-- LIST VIEW -->
+  <div id="fm-list-view">
+    <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div><h2>조향 레시피</h2><p>저장된 레시피를 클릭하거나 새로 만들어보세요.</p></div>
+      <button class="btn primary" style="margin-top:4px" onclick="openFmEditor(null)">+ 새 레시피</button>
+    </div>
+    <div id="fm-grid"></div>
+  </div>
+
+  <!-- EDITOR VIEW -->
+  <div id="fm-editor-view" style="display:none">
+    <div class="ph" style="display:flex;align-items:center;gap:12px">
+      <button class="btn" style="font-size:12px;padding:5px 12px" onclick="closeFmEditor()">← 목록</button>
+      <div><h2 id="fm-editor-title">새 레시피</h2><p id="fm-editor-sub">어코드와 향료를 조합해 향수를 설계하세요.</p></div>
+    </div>
+    <div class="grid2" style="align-items:start">
+      <div>
+        <div class="card">
+          <div class="card-title">기본 정보</div>
+          <label>프로젝트명</label><input type="text" id="fm-name" placeholder="예: 비 온 뒤 숲속">
+          <div class="grid2" style="margin-top:0">
+            <div><label>버전</label><input type="text" id="fm-ver" value="v1.0"></div>
+            <div><label>레퍼런스 향수</label><select id="fm-ref"><option value="">없음</option></select></div>
+          </div>
+          <label>메모</label><textarea id="fm-note" placeholder="이 버전의 조향 의도..."></textarea>
+        </div>
+        <div class="card">
+          <div class="card-title">성분 구성</div>
+          <div class="formula-hdr"><span>성분</span><span>함량(g)</span><span>비율%</span><span>노트</span><span></span></div>
+          <div id="fm-rows"></div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <select id="fm-add-sel" style="flex:1"><option value="">추가할 성분 선택...</option></select>
+            <button class="btn" onclick="addFmRow()">추가</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn primary" onclick="saveFm()">저장</button>
+            <button class="btn" onclick="copyFmVersion()">버전 복사</button>
+            <button class="btn" onclick="closeFmEditor()">취소</button>
+          </div>
+        </div>
+      </div>
+      <div style="position:sticky;top:28px">
+        <div class="card">
+          <div class="card-title">T / M / B 비율</div>
+          <div id="fm-stack" class="stack-bar"></div>
+          <div id="fm-stack-leg" style="display:flex;gap:12px;font-size:11px;margin-top:6px;flex-wrap:wrap"></div>
+          <hr class="divider">
+          <div class="card-title">향기 프로필 비교</div>
+          <div style="display:flex;justify-content:center"><canvas id="fm-radar" width="240" height="240"></canvas></div>
+          <div style="font-size:11px;color:var(--ink3);text-align:center;margin-top:6px">
+            <span style="color:#6366f1">■</span> 내 레시피 &nbsp; <span style="color:#f59e0b">■</span> 레퍼런스
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- AGING -->
+<div class="page" id="page-aging">
+  <div class="ph"><h2>숙성 관리</h2><p>시간이 만드는 변화를 기록하세요.</p></div>
+  <div class="card">
+    <div class="card-title">새 숙성 등록</div>
+    <div class="grid2">
+      <div><label>레시피</label><select id="ag-fm"></select></div>
+      <div><label>조향 완료일</label><input type="date" id="ag-date"></div>
+    </div>
+    <div class="btn-row"><button class="btn primary" onclick="startAging()">숙성 시작</button></div>
+  </div>
+  <div class="card"><div class="card-title">숙성 중인 프로젝트</div><div id="ag-list"></div></div>
+</div>
+
+<!-- GC-MS -->
+<div class="page" id="page-gcms">
+  <div class="ph"><h2>GC-MS 시뮬레이터</h2><p>단일 분자의 실제 RI 값 기반 크로마토그램 시뮬레이션.</p></div>
+  <div class="grid2" style="align-items:start">
+    <div>
+      <div class="card">
+        <div class="card-title">향료 선택</div>
+        <select id="gc-sel" style="margin-bottom:8px"><option value="">DB에서 향료 선택...</option></select>
+        <div class="card-title" style="margin-top:12px">직접 입력</div>
+        <div class="grid2">
+          <div><label>향료명</label><input type="text" id="gc-cname" placeholder="Linalool"></div>
+          <div><label>RI 값</label><input type="number" id="gc-cri" placeholder="1100"></div>
+        </div>
+        <div class="grid2">
+          <div><label>함량(g)</label><input type="number" id="gc-camt" value="1" step="0.1"></div>
+          <div><label>노트</label><select id="gc-cnote"><option value="T">탑</option><option value="M">미들</option><option value="B">베이스</option></select></div>
+        </div>
+        <div class="btn-row"><button class="btn" onclick="addGcCustom()">그래프에 추가</button></div>
+        <hr class="divider">
+        <div class="card-title">선택된 분자</div>
+        <div id="gc-mol-list"></div>
+        <div class="btn-row">
+          <button class="btn primary" onclick="runGc()">시뮬레이션 실행</button>
+          <button class="btn" onclick="clearGc()">초기화</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">아로마 케미컬 프리셋</div>
+        <div id="gc-presets" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+          예측 크로마토그램
+          <div style="display:flex;gap:4px">
+            <button id="gc-mode-line" class="btn" style="font-size:11px;padding:4px 10px;background:var(--cream2);border-color:var(--border)" onclick="setGcMode('line')">선형</button>
+            <button id="gc-mode-circ" class="btn" style="font-size:11px;padding:4px 10px" onclick="setGcMode('circ')">원형</button>
+          </div>
+        </div>
+        <div id="gc-line-wrap" style="position:relative;height:300px"><canvas id="gc-chart" style="width:100%;height:100%"></canvas></div>
+        <div id="gc-circ-wrap" style="display:none;display:none;justify-content:center"><svg id="gc-circ-svg" width="360" height="360" viewBox="0 0 360 360"></svg></div>
+        <div id="gc-legend" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;font-size:11px"></div>
+        <hr class="divider">
+        <p style="font-size:11px;color:var(--ink2);line-height:1.6">
+          <strong>선형:</strong> X축 = RI · Y축 = 강도 &nbsp;|&nbsp; <strong>원형:</strong> 각도 = RI 위치 · 반지름 = 피크 강도
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- VAULT -->
+<div class="page" id="page-vault">
+  <div class="ph"><h2>지식 창고</h2><p>향수 관련 용어, 개념, 레퍼런스를 자유롭게 쌓아두세요.</p></div>
+  <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:center">
+    <input type="text" id="vlt-q" placeholder="제목, 내용, 태그 검색..." style="flex:1;min-width:180px">
+    <select id="vlt-cat-f" style="width:130px">
+      <option value="">전체 카테고리</option>
+      <option value="용어">용어</option>
+      <option value="기법">기법</option>
+      <option value="역사">역사</option>
+      <option value="화학">화학</option>
+      <option value="원료">원료</option>
+      <option value="감각">감각</option>
+      <option value="기타">기타</option>
+    </select>
+    <button class="btn primary" onclick="openVltModal()">+ 새 노트</button>
+  </div>
+  <div id="vlt-cat-tabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px"></div>
+  <div id="vlt-list"></div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /app -->
+
+<!-- VAULT MODAL -->
+<div class="modal-overlay" id="vlt-modal">
+  <div class="modal" style="width:560px">
+    <h3 id="vlt-modal-title">새 노트</h3>
+    <label>제목</label><input type="text" id="vm-title" placeholder="예: 장 카를 기법이란?">
+    <div class="grid2">
+      <div>
+        <label>카테고리</label>
+        <select id="vm-cat">
+          <option value="용어">용어</option>
+          <option value="기법">기법</option>
+          <option value="역사">역사</option>
+          <option value="화학">화학</option>
+          <option value="원료">원료</option>
+          <option value="감각">감각</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div>
+        <label>태그 (쉼표 구분)</label>
+        <input type="text" id="vm-tags" placeholder="예: 훈련법, 기초, 조향사">
+      </div>
+    </div>
+    <label>내용</label>
+    <textarea id="vm-body" style="min-height:160px" placeholder="자유롭게 내용을 적어두세요. 정의, 설명, 메모, 참고자료 링크 등 뭐든 좋아요."></textarea>
+    <label>출처 / 레퍼런스 (선택)</label>
+    <input type="text" id="vm-src" placeholder="예: Perfumery by Müller, 2005 / www.fragrantica.com">
+    <label>연결된 향료 (선택)</label>
+    <select id="vm-ing-link" style="margin-bottom:4px"><option value="">없음</option></select>
+    <div class="modal-footer">
+      <button class="btn primary" onclick="saveVlt()">저장</button>
+      <button class="btn" onclick="closeModal('vlt-modal')">취소</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="ref-modal">
+  <div class="modal">
+    <h3 id="ref-modal-title">레퍼런스 향수 추가</h3>
+    <label>향수명</label><input type="text" id="rm-name" placeholder="예: Santal 33">
+    <div class="grid2">
+      <div><label>브랜드</label><input type="text" id="rm-brand" placeholder="Le Labo"></div>
+      <div><label>조향사</label><input type="text" id="rm-perfumer" placeholder="Frank Voelkl"></div>
+    </div>
+    <div class="grid2">
+      <div><label>출시 연도</label><input type="number" id="rm-year" placeholder="2011"></div>
+      <div><label>카테고리</label>
+        <select id="rm-cat">
+          <option>우디 (Woody)</option><option>플로럴 (Floral)</option><option>시트러스 (Citrus)</option>
+          <option>오리엔탈 (Oriental)</option><option>푸제르 (Fougère)</option><option>치프레 (Chypre)</option>
+          <option>아쿠아틱 (Aquatic)</option><option>구르망 (Gourmand)</option>
+        </select>
+      </div>
+    </div>
+    <label>탑 노트 (쉼표 구분)</label><input type="text" id="rm-top" placeholder="Cardamom, Iris">
+    <label>미들 노트</label><input type="text" id="rm-mid" placeholder="Ambrox, Sandalwood">
+    <label>베이스 노트</label><input type="text" id="rm-base" placeholder="Musk, Cedar">
+    <label>향기 프로필 (0~10 · 8개: 우디,플로럴,시트러스,오리엔탈,파우더리,스파이시,머스키,그리니)</label>
+    <input type="text" id="rm-profile" placeholder="9,2,1,4,5,3,6,1">
+    <label>시향 메모</label><textarea id="rm-note"></textarea>
+    <div class="modal-footer">
+      <button class="btn primary" onclick="saveRef()">저장</button>
+      <button class="btn" onclick="closeModal('ref-modal')">취소</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="ing-modal">
+  <div class="modal">
+    <h3 id="ing-modal-title">향료 등록</h3>
+    <div class="grid2">
+      <div><label>향료명</label><input type="text" id="im-name" placeholder="예: Hedione"></div>
+      <div><label>CAS 번호</label><input type="text" id="im-cas" placeholder="1566-63-8"></div>
+    </div>
+    <div class="grid3">
+      <div><label>노트</label><select id="im-note"><option value="T">탑</option><option value="M">미들</option><option value="B">베이스</option></select></div>
+      <div><label>분자량 (g/mol)</label><input type="number" id="im-mw" placeholder="226.3"></div>
+      <div><label>끓는점 (°C)</label><input type="number" id="im-bp" placeholder="258"></div>
+    </div>
+    <div class="grid2">
+      <div><label>RI 값</label><input type="number" id="im-ri" placeholder="1456"></div>
+      <div><label>계열</label>
+        <select id="im-fam">
+          <option>우디</option><option>플로럴</option><option>시트러스</option><option>머스키</option>
+          <option>스파이시</option><option>그리니</option><option>아쿠아틱</option><option>파우더리</option><option>발사믹</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div><label>천연/합성</label><select id="im-type"><option value="synth">합성</option><option value="nat">천연</option></select></div>
+      <div><label>강도 (0~10)</label><input type="number" id="im-impact" min="0" max="10" placeholder="7"></div>
+    </div>
+    <label>태그 (쉼표 구분)</label><input type="text" id="im-tags" placeholder="장미향_강화, 클린머스크">
+    <label>시향 메모</label><textarea id="im-memo" placeholder="색상, 온도, 질감, 감정..."></textarea>
+    <label>MSDS / IFRA</label><input type="text" id="im-msds" placeholder="IFRA 최대 허용량 3% (Category 4)">
+    <hr class="divider">
+    <div class="card-title">상성 기록</div>
+    <div id="im-compat"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <select id="im-compat-sel" style="flex:1"></select>
+      <input type="text" id="im-compat-note" placeholder="상성 메모..." style="flex:2">
+      <button class="btn" onclick="addCompat()">추가</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn primary" onclick="saveIng()">저장</button>
+      <button class="btn" onclick="closeModal('ing-modal')">취소</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ────────────────────────────────────────────────
+var S = {ingredients:[],accords:[],formulas:[],references:[],agings:[],gcMols:[],vault:[]};
+var editRef=null, editIng=null, tmpCompat=[];
+var accSel=[], fmRows=[];
+var accChart=null, fmChart=null, gcChart=null;
+
+var METRICS_DEFAULT = ['무거움','날카로움','확산력','지속력','달콤함'];
+var accMetrics = METRICS_DEFAULT.slice();
+
+var GC_PRESETS=[
+  {name:'Linalool',ri:1100,note:'M',impact:7,fam:'플로럴',cas:'78-70-6'},
+  {name:'Limonene',ri:1030,note:'T',impact:8,fam:'시트러스',cas:'5989-27-5'},
+  {name:'Hedione',ri:1480,note:'M',impact:6,fam:'플로럴',cas:'24851-98-7'},
+  {name:'Ambroxan',ri:1680,note:'B',impact:9,fam:'우디',cas:'6790-58-5'},
+  {name:'ISO E Super',ri:1570,note:'B',impact:9,fam:'우디',cas:'54464-57-2'},
+  {name:'Citral',ri:1240,note:'T',impact:8,fam:'시트러스',cas:'5392-40-5'},
+  {name:'Galaxolide',ri:1850,note:'B',impact:8,fam:'머스키',cas:'1222-05-5'},
+  {name:'Calone 1951',ri:1510,note:'M',impact:7,fam:'아쿠아틱',cas:'28940-11-6'},
+  {name:'Phenethyl Alcohol',ri:1110,note:'M',impact:6,fam:'플로럴',cas:'60-12-8'},
+  {name:'Geraniol',ri:1255,note:'M',impact:7,fam:'플로럴',cas:'106-24-1'},
+  {name:'Eugenol',ri:1360,note:'M',impact:8,fam:'스파이시',cas:'97-53-0'},
+  {name:'Vanillin',ri:1395,note:'B',impact:9,fam:'발사믹',cas:'121-33-5'},
+  {name:'Coumarin',ri:1460,note:'B',impact:7,fam:'발사믹',cas:'91-64-5'},
+  {name:'Methyl Ionone',ri:1520,note:'M',impact:8,fam:'파우더리',cas:'1335-46-2'},
+  {name:'Benzyl Acetate',ri:1170,note:'T',impact:7,fam:'플로럴',cas:'140-11-4'},
+];
+var GC_COLORS=['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316','#06b6d4','#84cc16'];
+
+function uid(){return '_'+Math.random().toString(36).slice(2,9)}
+function qs(id){return document.getElementById(id)}
+// ── SUPABASE CONFIG ── 아래 두 줄에 본인 키를 넣으세요 ──────
+var SB_URL = 'https://hjzutzaifxabtxrmazhl.supabase.co';        // 예: https://abcdefgh.supabase.co
+var SB_KEY = 'sb_publishable_dVofyGSodh5SrQ1wfBbPpA_oKTVt_-_';  // Settings > API > anon public
+// ────────────────────────────────────────────────────────────
+
+var SB_ROW_ID = 1; // 단일 row에 전체 데이터를 저장
+var syncStatus = 'idle'; // idle | saving | saved | error | offline
+
+function setSyncStatus(s){
+  syncStatus=s;
+  var el=document.getElementById('sync-status');
+  if(!el)return;
+  var map={idle:'',saving:'저장 중…',saved:'저장됨 ✓',error:'저장 실패 ✗',offline:'오프라인 (로컬 저장됨)'};
+  var col={idle:'',saving:'var(--ink3)',saved:'#1a5c30',error:'#9b2020',offline:'var(--ink3)'};
+  el.textContent=map[s]||'';
+  el.style.color=col[s]||'';
+}
+
+function persist(){
+  try{localStorage.setItem('pos2',JSON.stringify(S))}catch(e){}
+  if(SB_URL==='YOUR_SUPABASE_URL'){setSyncStatus('offline');return;}
+  setSyncStatus('saving');
+  // UPSERT 방식으로 변경 — row 있든 없든 한 번에 처리
+  fetch(SB_URL+'/rest/v1/perfumer_data',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'apikey':SB_KEY,
+      'Authorization':'Bearer '+SB_KEY,
+      'Prefer':'resolution=merge-duplicates,return=minimal'
+    },
+    body:JSON.stringify({id:SB_ROW_ID,payload:S})
+  }).then(function(r){
+    if(r.ok||r.status===201||r.status===204){
+      setSyncStatus('saved');
+      setTimeout(function(){setSyncStatus('idle')},2500);
+    } else {
+      r.text().then(function(t){console.warn('Supabase save error:',r.status,t)});
+      setSyncStatus('error');
+    }
+  }).catch(function(e){
+    console.warn('Supabase fetch error:',e);
+    setSyncStatus('offline');
+  });
+}
+
+function restore(){
+  try{var d=localStorage.getItem('pos2');if(d){S=JSON.parse(d);if(!S.vault)S.vault=[];}}catch(e){}
+  if(SB_URL==='YOUR_SUPABASE_URL')return;
+  fetch(SB_URL+'/rest/v1/perfumer_data?id=eq.'+SB_ROW_ID+'&select=payload',{
+    headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+  }).then(function(r){
+    if(!r.ok)throw new Error('status '+r.status);
+    return r.json();
+  }).then(function(rows){
+    if(rows&&rows.length&&rows[0].payload){
+      S=rows[0].payload;
+      if(!S.vault)S.vault=[];
+      try{localStorage.setItem('pos2',JSON.stringify(S))}catch(e){}
+      setSyncStatus('saved');
+      setTimeout(function(){setSyncStatus('idle')},1500);
+      updateStats(); renderHome(); renderDash();
+    }
+    // row 없으면 그냥 로컬 데이터 쓰기 (에러 아님)
+  }).catch(function(e){
+    console.warn('Supabase restore error:',e);
+    // 로컬 데이터는 이미 위에서 로드됐으므로 그냥 진행
+  });
+}
+restore();
+
+// ── MOBILE NAV ───────────────────────────────────────────
+function toggleMobMenu(){
+  var d=qs('mobile-menu-drawer');
+  d.classList.toggle('open');
+}
+function mobNav(pg, el){
+  // close drawer
+  qs('mobile-menu-drawer').classList.remove('open');
+  // update quick btn active state
+  document.querySelectorAll('.mob-qbtn').forEach(function(b){b.classList.remove('active')});
+  if(el&&el.classList.contains('mob-qbtn'))el.classList.add('active');
+  // update drawer active
+  document.querySelectorAll('.mob-menu-item').forEach(function(b){b.classList.remove('active')});
+  if(el&&el.classList.contains('mob-menu-item'))el.classList.add('active');
+  navTo(pg);
+}
+function navTo(pg){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active')});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')});
+  var target=qs('page-'+pg);
+  if(target)target.classList.add('active');
+  var navItem=document.querySelector('.nav-item[data-page="'+pg+'"]');
+  if(navItem)navItem.classList.add('active');
+  if(pg==='home')renderHome();
+  if(pg==='dashboard')renderDash();
+  if(pg==='reference')renderRefs();
+  if(pg==='db'){renderIngs();populateCompatSel();}
+  if(pg==='accord'){renderAccGrid();renderAccMetrics();}
+  if(pg==='formula'){renderFmGrid();}
+  if(pg==='aging'){populateAgFm();renderAgList();}
+  if(pg==='gcms'){populateGcSel();renderGcPresets();}
+  if(pg==='vault'){renderVault();}
+  updateStats();
+  window.scrollTo(0,0);
+}
+
+// ── HOME ─────────────────────────────────────────────────
+function renderHome(){
+  updateStats();
+  qs('hs-ing').textContent=S.ingredients.length;
+  qs('hs-acc').textContent=S.accords.length;
+  qs('hs-fm').textContent=S.formulas.length;
+  var rfEl=qs('hs-recent-fm');
+  var recent=S.formulas.slice(-4).reverse();
+  rfEl.innerHTML=recent.length?recent.map(function(f){
+    var total=f.rows?f.rows.reduce(function(s,r){return s+(r.amount||0)},0):0;
+    var tPct=total?Math.round(f.rows.filter(function(r){return r.note==='T'}).reduce(function(s,r){return s+r.amount},0)/total*100):0;
+    var mPct=total?Math.round(f.rows.filter(function(r){return r.note==='M'}).reduce(function(s,r){return s+r.amount},0)/total*100):0;
+    var bPct=100-tPct-mPct;
+    return '<div class="home-recent-item" onclick="openFmEditor(\''+f.id+'\')">'
+      +'<div style="flex:1"><div class="home-recent-name">'+f.name+'</div>'
+      +'<div style="display:flex;height:3px;border-radius:2px;overflow:hidden;width:80px;margin-top:4px">'
+      +'<div style="width:'+tPct+'%;background:#f59e0b"></div>'
+      +'<div style="width:'+mPct+'%;background:#10b981"></div>'
+      +'<div style="width:'+bPct+'%;background:#8b5cf6"></div>'
+      +'</div></div>'
+      +'<span class="home-recent-badge">'+f.version+'</span>'
+      +'</div>';
+  }).join(''):'<div style="font-size:12px;color:var(--ink3);padding:8px 0">아직 레시피가 없어요</div>';
+  var agEl=qs('hs-aging');
+  var active=S.agings.filter(function(a){return a.active});
+  agEl.innerHTML=active.length?active.slice(0,3).map(function(a){
+    var w=Math.floor((Date.now()-new Date(a.startDate))/(7*24*3600*1000));
+    return '<div class="home-recent-item" onclick="navTo(\'aging\')">'
+      +'<div class="home-recent-name">'+a.name+'</div>'
+      +'<span class="home-recent-badge">'+w+'주 경과</span>'
+      +'</div>';
+  }).join(''):'<div style="font-size:12px;color:var(--ink3);padding:8px 0">숙성 중인 프로젝트 없음</div>';
+}
+
+// ── NAV ─────────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(function(el){
+  el.addEventListener('click',function(){
+    navTo(this.dataset.page);
+  });
+});
+
+// ── STATS ────────────────────────────────────────────────
+function updateStats(){
+  qs('s-ing').textContent=S.ingredients.length;
+  qs('s-acc').textContent=S.accords.length;
+  qs('s-fm').textContent=S.formulas.length;
+}
+
+// ── DASHBOARD ────────────────────────────────────────────
+function renderDash(){
+  updateStats();
+  var el=qs('d-aging');
+  var active=S.agings.filter(function(a){return a.active});
+  el.innerHTML=active.length?active.slice(0,4).map(function(a){
+    var w=Math.floor((Date.now()-new Date(a.startDate))/(7*24*3600*1000));
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><div style="width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0"></div><div><div style="font-size:13px;font-weight:500">'+a.name+'</div><div style="font-size:11px;color:var(--ink3)">'+w+'주 경과</div></div></div>';
+  }).join(''):'<div class="empty">숙성 중인 프로젝트 없음</div>';
+  var ri=qs('d-ing');
+  ri.innerHTML=S.ingredients.length?S.ingredients.slice(-5).reverse().map(function(i){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><div style="flex:1;font-size:13px;font-weight:500">'+i.name+'</div><span class="pill pill-'+i.note+'">'+{T:'탑',M:'미들',B:'베이스'}[i.note]+'</span></div>';
+  }).join(''):'<div class="empty">향료 없음</div>';
+  var rf=qs('d-fm');
+  rf.innerHTML=S.formulas.length?S.formulas.slice(-3).reverse().map(function(f){
+    return '<div class="list-item"><div><div class="list-title">'+f.name+'<span class="version-badge">'+f.version+'</span></div><div class="list-sub">'+(f.rows||[]).length+'가지 성분</div></div></div>';
+  }).join(''):'<div class="empty">레시피 없음</div>';
+}
+
+// ── REFERENCE ────────────────────────────────────────────
+function openRefModal(id){
+  editRef=id||null;
+  qs('ref-modal-title').textContent=id?'레퍼런스 편집':'레퍼런스 향수 추가';
+  if(id){
+    var r=S.references.find(function(x){return x.id===id});
+    if(r){
+      qs('rm-name').value=r.name||''; qs('rm-brand').value=r.brand||'';
+      qs('rm-perfumer').value=r.perfumer||''; qs('rm-year').value=r.year||'';
+      qs('rm-cat').value=r.category||'우디 (Woody)';
+      qs('rm-top').value=(r.topNotes||[]).join(', ');
+      qs('rm-mid').value=(r.midNotes||[]).join(', ');
+      qs('rm-base').value=(r.baseNotes||[]).join(', ');
+      qs('rm-profile').value=(r.profile||[]).join(',');
+      qs('rm-note').value=r.note||'';
+    }
+  } else {
+    ['rm-name','rm-brand','rm-perfumer','rm-year','rm-top','rm-mid','rm-base','rm-profile','rm-note'].forEach(function(i){qs(i).value=''});
+  }
+  qs('ref-modal').classList.add('open');
+}
+function saveRef(){
+  var n=qs('rm-name').value.trim(); if(!n)return;
+  var obj={id:editRef||uid(),name:n,brand:qs('rm-brand').value,perfumer:qs('rm-perfumer').value,
+    year:qs('rm-year').value,category:qs('rm-cat').value,
+    topNotes:qs('rm-top').value.split(',').map(function(s){return s.trim()}).filter(Boolean),
+    midNotes:qs('rm-mid').value.split(',').map(function(s){return s.trim()}).filter(Boolean),
+    baseNotes:qs('rm-base').value.split(',').map(function(s){return s.trim()}).filter(Boolean),
+    profile:qs('rm-profile').value.split(',').map(Number).filter(function(n){return !isNaN(n)}),
+    note:qs('rm-note').value};
+  if(editRef){S.references=S.references.map(function(r){return r.id===editRef?obj:r})}
+  else{S.references.push(obj)}
+  persist(); closeModal('ref-modal'); renderRefs(); populateFmRef();
+}
+function renderRefs(){
+  var q=qs('ref-q').value.toLowerCase();
+  var list=S.references.filter(function(r){return r.name.toLowerCase().includes(q)||r.brand.toLowerCase().includes(q)});
+  var el=qs('ref-list');
+  if(!list.length){el.innerHTML='<div class="empty">등록된 레퍼런스 향수가 없습니다.</div>';return}
+  el.innerHTML=list.map(function(r){
+    return '<div class="list-item"><div style="flex:1"><div class="list-title">'+r.name+(r.year?' ('+r.year+')':'')+'</div><div class="list-sub">'+r.brand+(r.perfumer?' · '+r.perfumer:'')+(r.category?' · '+r.category:'')+'</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">'+(r.topNotes||[]).map(function(n){return'<span class="tag tag-top">'+n+'</span>'}).join('')+(r.midNotes||[]).map(function(n){return'<span class="tag tag-mid">'+n+'</span>'}).join('')+(r.baseNotes||[]).map(function(n){return'<span class="tag tag-base">'+n+'</span>'}).join('')+'</div>'+(r.note?'<div style="font-size:11px;color:var(--ink2);margin-top:6px">'+r.note+'</div>':'')+'</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0"><a class="frag-link" href="https://www.fragrantica.com/search/?query='+encodeURIComponent(r.name)+'" target="_blank">Fragrantica ↗</a><button class="btn" style="font-size:11px" onclick="openRefModal(\''+r.id+'\')">편집</button><button class="btn danger" style="font-size:11px" onclick="delRef(\''+r.id+'\')">삭제</button></div></div>';
+  }).join('');
+}
+function delRef(id){if(confirm('삭제할까요?')){S.references=S.references.filter(function(r){return r.id!==id});persist();renderRefs()}}
+qs('ref-q').addEventListener('input',renderRefs);
+
+// ── INGREDIENTS ──────────────────────────────────────────
+function openIngModal(id){
+  editIng=id||null; tmpCompat=[];
+  qs('ing-modal-title').textContent=id?'향료 편집':'향료 등록';
+  if(id){
+    var i=S.ingredients.find(function(x){return x.id===id});
+    if(i){
+      qs('im-name').value=i.name||''; qs('im-cas').value=i.cas||'';
+      qs('im-note').value=i.note||'T'; qs('im-mw').value=i.mw||'';
+      qs('im-bp').value=i.bp||''; qs('im-ri').value=i.ri||'';
+      qs('im-fam').value=i.family||'우디'; qs('im-type').value=i.type||'synth';
+      qs('im-impact').value=i.impact||5; qs('im-tags').value=(i.tags||[]).join(', ');
+      qs('im-memo').value=i.memo||''; qs('im-msds').value=i.msds||'';
+      tmpCompat=JSON.parse(JSON.stringify(i.compat||[]));
+    }
+  } else {
+    ['im-name','im-cas','im-mw','im-bp','im-ri','im-tags','im-memo','im-msds'].forEach(function(k){qs(k).value=''});
+    qs('im-impact').value=5; qs('im-note').value='T'; qs('im-type').value='synth';
+  }
+  populateCompatSel(); renderCompatList();
+  qs('ing-modal').classList.add('open');
+}
+function saveIng(){
+  var n=qs('im-name').value.trim(); if(!n)return;
+  var obj={id:editIng||uid(),name:n,cas:qs('im-cas').value,note:qs('im-note').value,
+    mw:parseFloat(qs('im-mw').value)||null,bp:parseFloat(qs('im-bp').value)||null,
+    ri:parseInt(qs('im-ri').value)||null,family:qs('im-fam').value,
+    type:qs('im-type').value,impact:parseInt(qs('im-impact').value)||5,
+    tags:qs('im-tags').value.split(',').map(function(s){return s.trim()}).filter(Boolean),
+    memo:qs('im-memo').value,msds:qs('im-msds').value,compat:tmpCompat};
+  if(editIng){S.ingredients=S.ingredients.map(function(i){return i.id===editIng?obj:i})}
+  else{S.ingredients.push(obj)}
+  persist(); closeModal('ing-modal'); renderIngs(); updateStats(); populateFmSel(); populateGcSel();
+}
+function renderIngs(){
+  var q=qs('ing-q').value.toLowerCase();
+  var nf=qs('ing-note-f').value;
+  var list=S.ingredients.filter(function(i){
+    return (i.name.toLowerCase().includes(q)||(i.tags||[]).some(function(t){return t.toLowerCase().includes(q)}))&&(!nf||i.note===nf);
+  });
+  var el=qs('ing-list');
+  if(!list.length){el.innerHTML='<div class="empty">등록된 향료가 없습니다.</div>';return}
+  el.innerHTML=list.map(function(i){
+    return '<div class="list-item"><div style="flex:1"><div class="list-title">'+i.name+(i.cas?'<span style="font-size:11px;color:var(--ink3);font-weight:400;margin-left:8px">'+i.cas+'</span>':'')+'</div><div class="list-sub">'+(i.family||'')+' · '+(i.type==='nat'?'천연':'합성')+(i.ri?' · RI: '+i.ri:'')+(i.mw?' · MW: '+i.mw:'')+(i.msds?'<br>'+i.msds:'')+'</div><div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px"><span class="pill pill-'+i.note+'">'+(i.note==='T'?'탑':i.note==='M'?'미들':'베이스')+'</span>'+(i.tags||[]).map(function(t){return'<span class="tag tag-gray">'+t+'</span>'}).join('')+'</div>'+(i.memo?'<div style="font-size:11px;color:var(--ink2);margin-top:4px">'+i.memo+'</div>':'')+'</div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0"><div style="font-size:11px;color:var(--ink3)">강도 '+(i.impact||'-')+'/10</div><button class="btn" style="font-size:11px" onclick="openIngModal(\''+i.id+'\')">편집</button><button class="btn danger" style="font-size:11px" onclick="delIng(\''+i.id+'\')">삭제</button></div></div>';
+  }).join('');
+}
+function delIng(id){if(confirm('삭제할까요?')){S.ingredients=S.ingredients.filter(function(i){return i.id!==id});persist();renderIngs();updateStats()}}
+qs('ing-q').addEventListener('input',renderIngs);
+qs('ing-note-f').addEventListener('change',renderIngs);
+
+function populateCompatSel(){
+  var sel=qs('im-compat-sel'); if(!sel)return;
+  sel.innerHTML='<option value="">향료 선택...</option>'+S.ingredients.map(function(i){return'<option value="'+i.id+'">'+i.name+'</option>'}).join('');
+}
+function addCompat(){
+  var sel=qs('im-compat-sel'),note=qs('im-compat-note').value.trim();
+  if(!sel.value)return;
+  var i=S.ingredients.find(function(x){return x.id===sel.value}); if(!i)return;
+  if(tmpCompat.find(function(c){return c.id===sel.value}))return;
+  tmpCompat.push({id:sel.value,name:i.name,note:note});
+  qs('im-compat-note').value=''; renderCompatList();
+}
+function renderCompatList(){
+  var el=qs('im-compat');
+  el.innerHTML=tmpCompat.map(function(c,i){
+    return '<div class="compat-row"><span style="flex:1;font-weight:500">'+c.name+'</span><span style="flex:2;color:var(--ink2)">'+c.note+'</span><button class="del-btn" onclick="tmpCompat.splice('+i+',1);renderCompatList()">×</button></div>';
+  }).join('');
+}
+
+// ── ACCORD ───────────────────────────────────────────────
+function renderAccIngSearch(){
+  var q=qs('acc-ing-q').value.toLowerCase();
+  var drop=qs('acc-ing-drop');
+  var filtered=S.ingredients.filter(function(i){return i.name.toLowerCase().includes(q)&&!accSel.find(function(s){return s.id===i.id})});
+  if(!q){drop.style.display='none';return}
+  drop.style.display='block';
+  drop.innerHTML=filtered.map(function(i){
+    return '<div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" onmousedown="selectAcc(\''+i.id+'\')">'
+      +i.name+' <span class="pill pill-'+i.note+'" style="margin-left:4px">'+(i.note==='T'?'탑':i.note==='M'?'미들':'베이스')+'</span></div>';
+  }).join('')||'<div style="padding:10px 12px;font-size:12px;color:var(--ink3)">결과 없음</div>';
+}
+qs('acc-ing-q').addEventListener('input',renderAccIngSearch);
+qs('acc-ing-q').addEventListener('blur',function(){setTimeout(function(){qs('acc-ing-drop').style.display='none'},150)});
+
+function selectAcc(id){
+  if(accSel.length>=5)return;
+  var i=S.ingredients.find(function(x){return x.id===id}); if(!i)return;
+  accSel.push({id:id,name:i.name,note:i.note,amount:1});
+  qs('acc-ing-q').value=''; qs('acc-ing-drop').style.display='none';
+  renderAccChips(); renderAccSliders(); updateAccRadar();
+}
+function renderAccChips(){
+  qs('acc-chips').innerHTML=accSel.map(function(s){
+    return '<span class="accord-chip">'+s.name+'<span class="rm" onclick="removeAccIng(\''+s.id+'\')">×</span></span>';
+  }).join('')||'<span style="font-size:12px;color:var(--ink3);align-self:center">향료를 검색해 추가하세요</span>';
+}
+function removeAccIng(id){accSel=accSel.filter(function(s){return s.id!==id});renderAccChips();renderAccSliders();updateAccRadar()}
+function renderAccSliders(){
+  qs('acc-sliders').innerHTML=accSel.map(function(s,i){
+    return '<div class="slider-row"><span class="slider-lbl">'+s.name+'</span><input type="range" min="1" max="20" value="'+s.amount+'" oninput="accSel['+i+'].amount=parseInt(this.value);this.nextElementSibling.textContent=this.value+\'g\';updateAccRadar()"><span class="slider-val">'+s.amount+'g</span></div>';
+  }).join('');
+}
+
+function renderAccMetrics(){
+  var el=qs('acc-metrics');
+  el.innerHTML=accMetrics.map(function(m,i){
+    return '<div class="slider-row" data-mi="'+i+'"><span class="slider-lbl">'+m+'</span><input type="range" min="0" max="10" value="5" oninput="this.nextElementSibling.textContent=this.value;updateAccRadar()"><span class="slider-val">5</span></div>';
+  }).join('');
+}
+function addMetric(){
+  var n=prompt('새 평가 지표 이름을 입력하세요'); if(!n)return;
+  accMetrics.push(n); renderAccMetrics(); updateAccRadar();
+}
+function getMetricVals(){
+  var rows=qs('acc-metrics').querySelectorAll('.slider-row');
+  return Array.from(rows).map(function(r){return parseInt(r.querySelector('input').value)});
+}
+function updateAccRadar(){
+  var vals=getMetricVals();
+  if(!accChart){
+    accChart=new Chart(qs('acc-radar').getContext('2d'),{type:'radar',data:{labels:accMetrics,datasets:[{label:'어코드',data:vals,backgroundColor:'rgba(99,102,241,.15)',borderColor:'#6366f1',pointBackgroundColor:'#6366f1',borderWidth:2}]},options:{responsive:false,scales:{r:{min:0,max:10,ticks:{stepSize:2,font:{size:9}},grid:{color:'rgba(0,0,0,.08)'},pointLabels:{font:{size:11}}}},plugins:{legend:{display:false}}}});
+  } else {
+    accChart.data.labels=accMetrics;
+    accChart.data.datasets[0].data=vals;
+    accChart.update('none');
+  }
+}
+function saveAccord(){
+  var n=qs('acc-name').value.trim(); if(!n)return;
+  if(!accSel.length){alert('향료를 선택해주세요.');return}
+  var isEdit=!!editingAccId;
+  var obj={id:editingAccId||uid(),name:n,ingredients:JSON.parse(JSON.stringify(accSel)),metrics:{labels:accMetrics.slice(),values:getMetricVals()}};
+  if(isEdit){S.accords=S.accords.map(function(a){return a.id===editingAccId?obj:a});}
+  else{S.accords.push(obj);}
+  persist(); updateStats(); populateFmSel();
+  closeAccEditor(); renderAccGrid();
+}
+var editingAccId=null;
+function openAccEditor(id){
+  editingAccId=id;
+  qs('acc-list-view').style.display='none';
+  qs('acc-editor-view').style.display='block';
+  accSel=[];
+  if(id){
+    var a=S.accords.find(function(x){return x.id===id}); if(!a)return;
+    qs('acc-editor-title').textContent=a.name;
+    qs('acc-name').value=a.name;
+    accSel=JSON.parse(JSON.stringify(a.ingredients||[]));
+    if(a.metrics&&a.metrics.labels){accMetrics=a.metrics.labels.slice();}
+  } else {
+    qs('acc-editor-title').textContent='새 어코드';
+    qs('acc-name').value='';
+    accMetrics=METRICS_DEFAULT.slice();
+  }
+  renderAccChips(); renderAccSliders(); renderAccMetrics(); updateAccRadar();
+  if(id&&S.accords.find(function(x){return x.id===id})&&S.accords.find(function(x){return x.id===id}).metrics){
+    var vals=S.accords.find(function(x){return x.id===id}).metrics.values||[];
+    setTimeout(function(){
+      qs('acc-metrics').querySelectorAll('input[type=range]').forEach(function(inp,i){
+        if(vals[i]!==undefined){inp.value=vals[i];inp.nextElementSibling.textContent=vals[i];}
+      });updateAccRadar();
+    },50);
+  }
+}
+function closeAccEditor(){
+  qs('acc-list-view').style.display='block';
+  qs('acc-editor-view').style.display='none';
+  editingAccId=null;
+  renderAccGrid();
+}
+function renderAccGrid(){
+  var el=qs('acc-grid'); if(!el)return;
+  if(!S.accords.length){
+    el.innerHTML='<div class="empty" style="padding:48px">아직 어코드가 없습니다.<br>오른쪽 위 버튼으로 첫 어코드를 만들어보세요!</div>';return;
+  }
+  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">'
+    +S.accords.map(function(a){
+      var noteCount={T:0,M:0,B:0};
+      (a.ingredients||[]).forEach(function(i){if(noteCount[i.note]!==undefined)noteCount[i.note]++;});
+      return '<div class="card" style="cursor:pointer;transition:box-shadow .15s" onmouseover="this.style.boxShadow=\'0 0 0 2px #6366f1\'" onmouseout="this.style.boxShadow=\'\'" onclick="openAccEditor(\''+a.id+'\')">'
+        +'<div style="display:flex;align-items:center;margin-bottom:10px">'
+        +'<div style="flex:1;font-weight:600;font-size:14px">'+a.name+'</div>'
+        +'<button class="del-btn" onclick="event.stopPropagation();delAccord(\''+a.id+'\')">×</button>'
+        +'</div>'
+        +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">'
+        +(a.ingredients||[]).map(function(i){return'<span class="tag tag-blue" style="font-size:10px">'+i.name+' '+i.amount+'g</span>'}).join('')
+        +'</div>'
+        +'<div style="display:flex;gap:6px;font-size:11px;color:var(--ink3)">'
+        +(noteCount.T?'<span style="color:#854d0e">탑 '+noteCount.T+'</span>':'')
+        +(noteCount.M?'<span style="color:#14532d">미들 '+noteCount.M+'</span>':'')
+        +(noteCount.B?'<span style="color:#4c1d95">베이스 '+noteCount.B+'</span>':'')
+        +'</div>'
+        +'</div>';
+    }).join('')+'</div>';
+}
+function delAccord(id){if(confirm('삭제할까요?')){S.accords=S.accords.filter(function(a){return a.id!==id});persist();renderAccGrid();updateStats()}}
+
+// ── FORMULA ──────────────────────────────────────────────
+function populateFmSel(){
+  var sel=qs('fm-add-sel'); if(!sel)return;
+  sel.innerHTML='<option value="">추가할 성분 선택...</option>'
+    +S.ingredients.map(function(i){return'<option value="ing_'+i.id+'">'+i.name+' (향료)</option>'}).join('')
+    +S.accords.map(function(a){return'<option value="acc_'+a.id+'">'+a.name+' (어코드)</option>'}).join('');
+}
+function populateFmRef(){
+  var sel=qs('fm-ref'); if(!sel)return;
+  sel.innerHTML='<option value="">없음</option>'+S.references.map(function(r){return'<option value="'+r.id+'">'+r.name+'</option>'}).join('');
+  sel.onchange=function(){updateFmRadar()};
+}
+function addFmRow(){
+  var sel=qs('fm-add-sel'); if(!sel.value)return;
+  var parts=sel.value.split('_'), type=parts[0], id=parts.slice(1).join('_');
+  var obj;
+  if(type==='ing'){obj=S.ingredients.find(function(x){return x.id===id});if(!obj)return;fmRows.push({type:'ing',id:id,name:obj.name,note:obj.note,amount:1})}
+  else{obj=S.accords.find(function(x){return x.id===id});if(!obj)return;fmRows.push({type:'acc',id:id,name:obj.name,note:'M',amount:1})}
+  renderFmRows();
+}
+function renderFmRows(){
+  var total=fmRows.reduce(function(s,r){return s+(r.amount||0)},0);
+  qs('fm-rows').innerHTML=fmRows.map(function(r,i){
+    var pct=total?((r.amount/total)*100).toFixed(1):'0.0';
+    return '<div class="formula-row"><span style="font-size:13px;font-weight:500">'+r.name+'</span>'
+      +'<input type="number" value="'+r.amount+'" min="0" step="0.1" onchange="fmRows['+i+'].amount=parseFloat(this.value)||0;renderFmRows()" style="padding:5px 8px">'
+      +'<span style="font-size:12px;text-align:center;color:var(--ink2)">'+pct+'%</span>'
+      +'<select onchange="fmRows['+i+'].note=this.value;renderFmRows()" style="padding:5px 8px">'
+      +['T','M','B'].map(function(n){return'<option value="'+n+'"'+(r.note===n?' selected':'')+'>'+{T:'탑',M:'미들',B:'베이스'}[n]+'</option>'}).join('')
+      +'</select><button class="del-btn" onclick="fmRows.splice('+i+',1);renderFmRows()">×</button></div>';
+  }).join('');
+  updateFmStack(); updateFmRadar();
+}
+function updateFmStack(){
+  var total=fmRows.reduce(function(s,r){return s+(r.amount||0)},0);
+  if(!total){qs('fm-stack').innerHTML='';qs('fm-stack-leg').innerHTML='';return}
+  var t=fmRows.filter(function(r){return r.note==='T'}).reduce(function(s,r){return s+r.amount},0);
+  var m=fmRows.filter(function(r){return r.note==='M'}).reduce(function(s,r){return s+r.amount},0);
+  var b=fmRows.filter(function(r){return r.note==='B'}).reduce(function(s,r){return s+r.amount},0);
+  var tp=Math.round(t/total*100),mp=Math.round(m/total*100),bp=Math.round(b/total*100);
+  qs('fm-stack').innerHTML='<div class="stack-seg" style="width:'+tp+'%;background:#f59e0b">'+(tp>8?tp+'%':'')+'</div><div class="stack-seg" style="width:'+mp+'%;background:#10b981">'+(mp>8?mp+'%':'')+'</div><div class="stack-seg" style="width:'+bp+'%;background:#8b5cf6">'+(bp>8?bp+'%':'')+'</div>';
+  qs('fm-stack-leg').innerHTML='<span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#f59e0b;margin-right:4px"></span>탑 '+tp+'%</span><span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#10b981;margin-right:4px"></span>미들 '+mp+'%</span><span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#8b5cf6;margin-right:4px"></span>베이스 '+bp+'%</span>';
+}
+function updateFmRadar(){
+  var LABELS=['우디','플로럴','시트러스','오리엔탈','파우더리','스파이시','머스키','그리니'];
+  var myD=new Array(8).fill(0);
+  fmRows.forEach(function(r){
+    var ing=S.ingredients.find(function(x){return x.id===r.id});
+    if(ing&&ing.family){var idx=LABELS.indexOf(ing.family);if(idx>=0)myD[idx]+=(r.amount||0)}
+  });
+  var mx=Math.max.apply(null,myD.concat([1]));
+  myD=myD.map(function(v){return Math.round(v/mx*10)});
+  var refD=new Array(8).fill(0);
+  var refId=qs('fm-ref')?qs('fm-ref').value:'';
+  if(refId){var ref=S.references.find(function(r){return r.id===refId});if(ref&&ref.profile&&ref.profile.length===8)refD=ref.profile}
+  if(!fmChart){
+    fmChart=new Chart(qs('fm-radar').getContext('2d'),{type:'radar',data:{labels:LABELS,datasets:[
+      {label:'내 레시피',data:myD,backgroundColor:'rgba(99,102,241,.15)',borderColor:'#6366f1',pointBackgroundColor:'#6366f1',borderWidth:2},
+      {label:'레퍼런스',data:refD,backgroundColor:'rgba(245,158,11,.1)',borderColor:'#f59e0b',pointBackgroundColor:'#f59e0b',borderWidth:2,borderDash:[4,4]}
+    ]},options:{responsive:false,scales:{r:{min:0,max:10,ticks:{stepSize:2,font:{size:9}},grid:{color:'rgba(0,0,0,.08)'},pointLabels:{font:{size:10}}}},plugins:{legend:{display:false}}}});
+  } else {
+    fmChart.data.datasets[0].data=myD;
+    fmChart.data.datasets[1].data=refD;
+    fmChart.update('none');
+  }
+}
+var editingFmId=null;
+function openFmEditor(id){
+  editingFmId=id;
+  qs('fm-list-view').style.display='none';
+  qs('fm-editor-view').style.display='block';
+  populateFmSel(); populateFmRef();
+  fmRows=[];
+  if(id){
+    var f=S.formulas.find(function(x){return x.id===id}); if(!f)return;
+    qs('fm-editor-title').textContent=f.name;
+    qs('fm-name').value=f.name; qs('fm-ver').value=f.version;
+    qs('fm-note').value=f.note||''; qs('fm-ref').value=f.refId||'';
+    fmRows=JSON.parse(JSON.stringify(f.rows||[]));
+  } else {
+    qs('fm-editor-title').textContent='새 레시피';
+    qs('fm-name').value=''; qs('fm-ver').value='v1.0'; qs('fm-note').value='';
+  }
+  renderFmRows();
+}
+function closeFmEditor(){
+  qs('fm-list-view').style.display='block';
+  qs('fm-editor-view').style.display='none';
+  editingFmId=null; fmRows=[];
+  renderFmGrid();
+}
+function saveFm(){
+  var n=qs('fm-name').value.trim(); if(!n)return;
+  if(!fmRows.length){alert('성분을 추가해주세요.');return}
+  var isEdit=!!editingFmId;
+  var obj={id:editingFmId||uid(),name:n,version:qs('fm-ver').value||'v1.0',refId:qs('fm-ref').value,note:qs('fm-note').value,rows:JSON.parse(JSON.stringify(fmRows)),createdAt:new Date().toISOString()};
+  if(isEdit){S.formulas=S.formulas.map(function(f){return f.id===editingFmId?obj:f});}
+  else{S.formulas.push(obj);}
+  persist(); updateStats(); populateAgFm();
+  closeFmEditor(); renderFmGrid();
+}
+function copyFmVersion(){
+  var cur=qs('fm-ver').value||'v1.0';
+  var m=cur.match(/v(\d+)\.(\d+)/);
+  qs('fm-ver').value=m?'v'+m[1]+'.'+(parseInt(m[2])+1):'v1.1';
+  editingFmId=null;
+  alert('버전이 '+qs('fm-ver').value+'로 변경되었습니다. 수정 후 저장해주세요.');
+}
+function renderFmGrid(){
+  var el=qs('fm-grid'); if(!el)return;
+  if(!S.formulas.length){
+    el.innerHTML='<div class="empty" style="padding:48px">아직 레시피가 없습니다.<br>오른쪽 위 버튼으로 첫 레시피를 만들어보세요!</div>';return;
+  }
+  var grouped={};
+  S.formulas.forEach(function(f){
+    var base=f.name;
+    if(!grouped[base])grouped[base]=[];
+    grouped[base].push(f);
+  });
+  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">'
+    +S.formulas.slice().reverse().map(function(f){
+      var total=f.rows?f.rows.reduce(function(s,r){return s+(r.amount||0)},0):0;
+      var tPct=total?Math.round(f.rows.filter(function(r){return r.note==='T'}).reduce(function(s,r){return s+r.amount},0)/total*100):0;
+      var mPct=total?Math.round(f.rows.filter(function(r){return r.note==='M'}).reduce(function(s,r){return s+r.amount},0)/total*100):0;
+      var bPct=100-tPct-mPct;
+      var ref=f.refId?S.references.find(function(r){return r.id===f.refId}):null;
+      return '<div class="card" style="cursor:pointer;transition:box-shadow .15s" onmouseover="this.style.boxShadow=\'0 0 0 2px #6366f1\'" onmouseout="this.style.boxShadow=\'\'" onclick="openFmEditor(\''+f.id+'\')">'
+        +'<div style="display:flex;align-items:flex-start;margin-bottom:8px">'
+        +'<div style="flex:1">'
+        +'<div style="font-weight:600;font-size:14px;margin-bottom:2px">'+f.name+'</div>'
+        +'<span class="version-badge" style="margin-left:0">'+f.version+'</span>'
+        +(ref?'<span style="font-size:10px;color:var(--ink3);margin-left:6px">ref: '+ref.name+'</span>':'')
+        +'</div>'
+        +'<button class="del-btn" onclick="event.stopPropagation();delFm(\''+f.id+'\')">×</button>'
+        +'</div>'
+        +(total?'<div style="display:flex;height:6px;border-radius:3px;overflow:hidden;margin-bottom:8px">'
+        +'<div style="width:'+tPct+'%;background:#f59e0b"></div>'
+        +'<div style="width:'+mPct+'%;background:#10b981"></div>'
+        +'<div style="width:'+bPct+'%;background:#8b5cf6"></div>'
+        +'</div>':'')
+        +'<div style="font-size:11px;color:var(--ink2)">'+(f.rows||[]).length+'가지 성분</div>'
+        +(f.note?'<div style="font-size:11px;color:var(--ink3);margin-top:4px">'+f.note.slice(0,50)+(f.note.length>50?'…':'')+'</div>':'')
+        +'<div style="font-size:10px;color:var(--ink3);margin-top:6px">'+new Date(f.createdAt).toLocaleDateString()+'</div>'
+        +'</div>';
+    }).join('')+'</div>';
+}
+function delFm(id){if(confirm('삭제할까요?')){S.formulas=S.formulas.filter(function(f){return f.id!==id});persist();renderFmGrid();updateStats()}}
+
+// ── AGING ────────────────────────────────────────────────
+function populateAgFm(){
+  var sel=qs('ag-fm'); if(!sel)return;
+  sel.innerHTML=S.formulas.map(function(f){return'<option value="'+f.id+'">'+f.name+' ('+f.version+')</option>'}).join('')||'<option>레시피 없음</option>';
+}
+
+// ── FORMULA ──────────────────────────────────────────────
+function startAging(){
+  var fid=qs('ag-fm').value, date=qs('ag-date').value;
+  if(!fid||!date){alert('레시피와 날짜를 선택해주세요.');return}
+  var fm=S.formulas.find(function(x){return x.id===fid}); if(!fm)return;
+  S.agings.push({id:uid(),name:fm.name+' '+fm.version,fmId:fid,startDate:date,active:true,logs:[]});
+  persist(); renderAgList();
+}
+function renderAgList(){
+  var el=qs('ag-list');
+  if(!S.agings.length){el.innerHTML='<div class="empty">숙성 중인 프로젝트가 없습니다.</div>';return}
+  el.innerHTML=S.agings.map(function(a){
+    var w=Math.floor((Date.now()-new Date(a.startDate))/(7*24*3600*1000));
+    var ms=[4,8,12];
+    return '<div class="card" style="margin-bottom:12px"><div style="display:flex;align-items:center;margin-bottom:12px"><div style="flex:1;font-weight:600">'+a.name+'</div><span style="font-size:12px;color:var(--ink3)">'+w+'주 경과</span></div><div style="display:flex;gap:8px;margin-bottom:12px">'+ms.map(function(m){
+      var done=w>=m;
+      return '<div class="aging-milestone '+(done?'aging-done':'aging-pending')+'"><div style="font-size:12px;font-weight:600;color:'+(done?'#065f46':'var(--ink2)')+'">'+m+'주</div><div style="font-size:10px;color:'+(done?'#10b981':'var(--ink3)')+'">'+( done?'✓ 시향 가능':'D-'+(m-w))+'</div></div>';
+    }).join('')+'</div>'+(a.logs&&a.logs.length?'<div style="margin-bottom:8px">'+a.logs.map(function(l){return'<div style="font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)">'+l.date+' · '+l.text+'</div>'}).join('')+'</div>':'')+'<div style="display:flex;gap:8px"><input type="text" id="ag-log-'+a.id+'" placeholder="변화를 기록하세요..." style="flex:1;font-size:12px;padding:6px 10px"><button class="btn" style="font-size:11px" onclick="addLog(\''+a.id+'\')">기록</button></div></div>';
+  }).join('');
+}
+function addLog(id){
+  var inp=qs('ag-log-'+id); if(!inp)return;
+  var text=inp.value.trim(); if(!text)return;
+  var a=S.agings.find(function(x){return x.id===id}); if(!a)return;
+  a.logs=a.logs||[]; a.logs.push({date:new Date().toLocaleDateString(),text:text});
+  inp.value=''; persist(); renderAgList();
+}
+qs('ag-date').value=new Date().toISOString().split('T')[0];
+
+// ── GC-MS ────────────────────────────────────────────────
+function populateGcSel(){
+  var sel=qs('gc-sel'); if(!sel)return;
+  var opts=S.ingredients.filter(function(i){return i.ri}).map(function(i){return'<option value="'+i.id+'">'+i.name+' (RI: '+i.ri+')</option>'});
+  sel.innerHTML='<option value="">DB에서 향료 선택...</option>'+opts.join('');
+  sel.onchange=function(){if(this.value)addGcFromDb(this.value);this.value=''};
+}
+function addGcFromDb(id){
+  var ing=S.ingredients.find(function(x){return x.id===id}); if(!ing||!ing.ri)return;
+  if(S.gcMols.find(function(m){return m.id===id}))return;
+  S.gcMols.push({id:id,name:ing.name,ri:ing.ri,note:ing.note,impact:ing.impact||7,amount:1,color:GC_COLORS[S.gcMols.length%GC_COLORS.length]});
+  renderGcMolList();
+}
+function addGcCustom(){
+  var name=qs('gc-cname').value.trim(), ri=parseInt(qs('gc-cri').value);
+  var amt=parseFloat(qs('gc-camt').value)||1, note=qs('gc-cnote').value;
+  if(!name||!ri)return;
+  S.gcMols.push({id:uid(),name:name,ri:ri,note:note,impact:7,amount:amt,color:GC_COLORS[S.gcMols.length%GC_COLORS.length]});
+  renderGcMolList(); qs('gc-cname').value=''; qs('gc-cri').value='';
+}
+function renderGcPresets(){
+  var el=qs('gc-presets'); if(!el)return;
+  el.innerHTML=GC_PRESETS.map(function(p){
+    return '<span class="gc-preset-tag" onclick=\'addGcPreset('+JSON.stringify(p)+')\'>'+p.name+'</span>';
+  }).join('');
+}
+function addGcPreset(p){
+  if(S.gcMols.find(function(m){return m.name===p.name}))return;
+  S.gcMols.push({id:uid(),name:p.name,ri:p.ri,note:p.note,impact:p.impact||7,amount:1,color:GC_COLORS[S.gcMols.length%GC_COLORS.length]});
+  renderGcMolList();
+}
+function renderGcMolList(){
+  var el=qs('gc-mol-list');
+  el.innerHTML=S.gcMols.map(function(m,i){
+    return '<div style="display:grid;grid-template-columns:1fr 80px 28px;gap:8px;align-items:center;margin:4px 0"><span style="font-size:12px;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:2px;background:'+m.color+';display:inline-block;flex-shrink:0"></span>'+m.name+' <span class="pill pill-'+m.note+'" style="font-size:10px">'+(m.note==='T'?'탑':m.note==='M'?'미들':'베이스')+'</span> <span style="color:var(--ink3);font-size:10px">RI:'+m.ri+'</span></span><input type="number" value="'+m.amount+'" min="0.1" step="0.1" onchange="S.gcMols['+i+'].amount=parseFloat(this.value)||0" style="padding:5px 8px"><button class="del-btn" onclick="S.gcMols.splice('+i+',1);renderGcMolList()">×</button></div>';
+  }).join('')||'<div class="empty" style="padding:16px">분자를 추가해주세요</div>';
+}
+var gcMode='line';
+function setGcMode(m){
+  gcMode=m;
+  qs('gc-mode-line').style.background=m==='line'?'#1a1a18':'var(--cream2)';
+  qs('gc-mode-line').style.color=m==='line'?'#fff':'var(--ink2)';
+  qs('gc-mode-circ').style.background=m==='circ'?'#1a1a18':'var(--cream2)';
+  qs('gc-mode-circ').style.color=m==='circ'?'#fff':'var(--ink2)';
+  qs('gc-line-wrap').style.display=m==='line'?'block':'none';
+  qs('gc-circ-wrap').style.display=m==='circ'?'flex':'none';
+  if(S.gcMols.length)runGc();
+}
+function clearGc(){S.gcMols=[];renderGcMolList();if(gcChart){gcChart.destroy();gcChart=null;}qs('gc-legend').innerHTML='';var sv=qs('gc-circ-svg');while(sv&&sv.firstChild)sv.removeChild(sv.firstChild);}
+function gaussian(x,mean,sigma){return Math.exp(-0.5*Math.pow((x-mean)/sigma,2))}
+function gcSvgEl(tag,attrs){var el=document.createElementNS('http://www.w3.org/2000/svg',tag);for(var k in attrs)el.setAttribute(k,attrs[k]);return el;}
+function riToAngle(ri){return((ri-700)/(2100-700))*2*Math.PI-Math.PI/2;}
+function gcPolar(cx,cy,r,a){return[cx+r*Math.cos(a),cy+r*Math.sin(a)];}
+function runGc(){
+  if(!S.gcMols.length){alert('향료를 먼저 추가해주세요.');return}
+  var riMin=700,riMax=2100,steps=360;
+  var allRI=[]; for(var i=0;i<=steps;i++)allRI.push(riMin+i*(riMax-riMin)/steps);
+  var combined=allRI.map(function(rv){return S.gcMols.reduce(function(s,mol){var sig=30+mol.ri*0.009;return s+gaussian(rv,mol.ri,sig)*mol.amount*(mol.impact||7);},0);});
+  var maxVal=Math.max.apply(null,combined.concat([0.001]));
+
+  if(gcMode==='line'){
+    var xs=allRI.map(function(v){return Math.round(v)});
+    var datasets=S.gcMols.map(function(mol){
+      var sig=30+mol.ri*0.009; var peak=mol.amount*(mol.impact||7);
+      var data=allRI.map(function(rv){return parseFloat((gaussian(rv,mol.ri,sig)*peak).toFixed(3))});
+      return{label:mol.name,data:data,borderColor:mol.color,backgroundColor:mol.color+'18',borderWidth:1.5,fill:true,pointRadius:0,tension:0.4};
+    });
+    var combData=allRI.map(function(_,i){return parseFloat(combined[i].toFixed(3))});
+    datasets.unshift({label:'합성',data:combData,borderColor:'rgba(30,30,30,0.75)',backgroundColor:'transparent',borderWidth:2.5,fill:false,pointRadius:0,tension:0.4,order:-1});
+    var canvas=qs('gc-chart');
+    if(gcChart)gcChart.destroy();
+    gcChart=new Chart(canvas,{type:'line',data:{labels:xs,datasets:datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{title:function(i){return'RI: '+xs[i[0].dataIndex]}}}},scales:{x:{title:{display:true,text:'Retention Index (RI)',font:{size:11}},ticks:{maxTicksLimit:12},grid:{color:'rgba(0,0,0,.05)'}},y:{title:{display:true,text:'상대 강도',font:{size:11}},beginAtZero:true,grid:{color:'rgba(0,0,0,.05)'}}},animation:{duration:400}}});
+  } else {
+    var sv=qs('gc-circ-svg'); while(sv.firstChild)sv.removeChild(sv.firstChild);
+    var CX=180,CY=180,RM=46,RX=148;
+    var bg='#f7f4ef', grid='rgba(0,0,0,.07)', lc='#999';
+    sv.appendChild(gcSvgEl('circle',{cx:CX,cy:CY,r:RX+26,fill:bg,stroke:'none'}));
+    var zones=[{s:700,e:1100,c:'#f59e0b',l:'탑'},{s:1100,e:1400,c:'#10b981',l:'미들'},{s:1400,e:2100,c:'#8b5cf6',l:'베이스'}];
+    zones.forEach(function(z){
+      var aS=riToAngle(z.s),aE=riToAngle(z.e),r1=RX+4,r2=RX+18,lg=Math.abs(aE-aS)>Math.PI?1:0;
+      var p1=gcPolar(CX,CY,r2,aS),p2=gcPolar(CX,CY,r2,aE),p3=gcPolar(CX,CY,r1,aE),p4=gcPolar(CX,CY,r1,aS);
+      var d='M'+p1[0].toFixed(1)+' '+p1[1].toFixed(1)+' A'+r2+' '+r2+' 0 '+lg+' 1 '+p2[0].toFixed(1)+' '+p2[1].toFixed(1)+' L'+p3[0].toFixed(1)+' '+p3[1].toFixed(1)+' A'+r1+' '+r1+' 0 '+lg+' 0 '+p4[0].toFixed(1)+' '+p4[1].toFixed(1)+'Z';
+      sv.appendChild(gcSvgEl('path',{d:d,fill:z.c,opacity:'0.15',stroke:'none'}));
+      var am=(aS+aE)/2,pm=gcPolar(CX,CY,r1+7,am);
+      var tl=gcSvgEl('text',{x:pm[0].toFixed(1),y:pm[1].toFixed(1),'text-anchor':'middle','dominant-baseline':'central','font-size':'8.5','fill':z.c,'font-weight':'700'});
+      tl.textContent=z.l; sv.appendChild(tl);
+    });
+    [0.25,0.5,0.75,1].forEach(function(t){sv.appendChild(gcSvgEl('circle',{cx:CX,cy:CY,r:RM+(RX-RM)*t,fill:'none',stroke:grid,'stroke-width':'1'}));});
+    [700,1100,1400,1700,2100].forEach(function(ri){
+      var a=riToAngle(ri),p1=gcPolar(CX,CY,RM,a),p2=gcPolar(CX,CY,RX,a);
+      sv.appendChild(gcSvgEl('line',{x1:p1[0].toFixed(1),y1:p1[1].toFixed(1),x2:p2[0].toFixed(1),y2:p2[1].toFixed(1),stroke:grid,'stroke-width':'1'}));
+      var pl=gcPolar(CX,CY,RX+22,a),anc=pl[0]<CX-8?'end':pl[0]>CX+8?'start':'middle';
+      var tl=gcSvgEl('text',{x:pl[0].toFixed(1),y:pl[1].toFixed(1),'text-anchor':anc,'dominant-baseline':'central','font-size':'8.5','fill':lc});
+      tl.textContent=ri; sv.appendChild(tl);
+    });
+    S.gcMols.forEach(function(mol){
+      var sig=30+mol.ri*0.009,peak=mol.amount*(mol.impact||7);
+      var pts=allRI.map(function(rv,i){var norm=gaussian(rv,mol.ri,sig)*peak/maxVal,r=RM+norm*(RX-RM),p=gcPolar(CX,CY,r,riToAngle(rv));return p[0].toFixed(1)+' '+p[1].toFixed(1);});
+      var path=gcSvgEl('path',{d:'M'+pts.join(' L')+' Z',fill:mol.color+'25',stroke:mol.color,'stroke-width':'1.2','stroke-linejoin':'round'});
+      path.setAttribute('fill',mol.color+'25'); sv.appendChild(path);
+    });
+    var combPts=allRI.map(function(rv,i){var norm=combined[i]/maxVal,r=RM+norm*(RX-RM),p=gcPolar(CX,CY,r,riToAngle(rv));return p[0].toFixed(1)+' '+p[1].toFixed(1);});
+    sv.appendChild(gcSvgEl('path',{d:'M'+combPts.join(' L')+' Z',fill:'rgba(80,80,160,0.06)',stroke:'none'}));
+    sv.appendChild(gcSvgEl('path',{d:'M'+combPts.join(' L')+' Z',fill:'none',stroke:'rgba(40,40,100,0.7)','stroke-width':'2','stroke-linejoin':'round'}));
+    S.gcMols.forEach(function(mol){
+      var a=riToAngle(mol.ri),norm=mol.amount*(mol.impact||7)/maxVal,r=RM+norm*(RX-RM),dp=gcPolar(CX,CY,r,a);
+      sv.appendChild(gcSvgEl('circle',{cx:dp[0].toFixed(1),cy:dp[1].toFixed(1),r:'4',fill:mol.color,stroke:bg,'stroke-width':'1.5'}));
+      var lr=Math.min(r+14,RX-4),lp=gcPolar(CX,CY,lr,a),anc=lp[0]<CX-8?'end':lp[0]>CX+8?'start':'middle';
+      var tl=gcSvgEl('text',{x:lp[0].toFixed(1),y:lp[1].toFixed(1),'text-anchor':anc,'dominant-baseline':'central','font-size':'9','fill':mol.color,'font-weight':'700'});
+      tl.textContent=mol.name; sv.appendChild(tl);
+    });
+    sv.appendChild(gcSvgEl('circle',{cx:CX,cy:CY,r:'4',fill:'#bbb',stroke:'none'}));
+  }
+  qs('gc-legend').innerHTML='<span style="display:flex;align-items:center;gap:4px"><span style="width:20px;height:2px;background:rgba(30,30,30,.75);display:inline-block"></span>합성</span>'+S.gcMols.map(function(m){return'<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:'+m.color+';display:inline-block"></span>'+m.name+'</span>'}).join('');
+}
+
+// ── MODAL HELPER ─────────────────────────────────────────
+function closeModal(id){qs(id).classList.remove('open')}
+
+// ── VAULT ────────────────────────────────────────────────
+var editVlt=null;
+var VLT_CAT_COLORS={'용어':'#6366f1','기법':'#f59e0b','역사':'#10b981','화학':'#ef4444','원료':'#8b5cf6','감각':'#ec4899','기타':'#888780'};
+function openVltModal(id){
+  editVlt=id||null;
+  qs('vlt-modal-title').textContent=id?'노트 편집':'새 노트';
+  var sel=qs('vm-ing-link');
+  sel.innerHTML='<option value="">없음</option>'+S.ingredients.map(function(i){return'<option value="'+i.id+'">'+i.name+'</option>'}).join('');
+  if(id){
+    var v=S.vault.find(function(x){return x.id===id});
+    if(v){
+      qs('vm-title').value=v.title||''; qs('vm-cat').value=v.cat||'용어';
+      qs('vm-tags').value=(v.tags||[]).join(', '); qs('vm-body').value=v.body||'';
+      qs('vm-src').value=v.src||''; qs('vm-ing-link').value=v.ingId||'';
+    }
+  } else {
+    ['vm-title','vm-tags','vm-body','vm-src'].forEach(function(k){qs(k).value=''});
+    qs('vm-cat').value='용어'; qs('vm-ing-link').value='';
+  }
+  qs('vlt-modal').classList.add('open');
+}
+function saveVlt(){
+  var t=qs('vm-title').value.trim(); if(!t)return;
+  var obj={id:editVlt||uid(),title:t,cat:qs('vm-cat').value,
+    tags:qs('vm-tags').value.split(',').map(function(s){return s.trim()}).filter(Boolean),
+    body:qs('vm-body').value,src:qs('vm-src').value,ingId:qs('vm-ing-link').value,
+    updatedAt:new Date().toISOString()};
+  if(editVlt){S.vault=S.vault.map(function(v){return v.id===editVlt?obj:v})}
+  else{S.vault.push(obj)}
+  persist(); closeModal('vlt-modal'); renderVault();
+}
+function deleteVlt(id){if(confirm('삭제할까요?')){S.vault=S.vault.filter(function(v){return v.id!==id});persist();renderVault();}}
+function renderVault(){
+  var q=(qs('vlt-q')||{}).value||'';
+  var cf=(qs('vlt-cat-f')||{}).value||'';
+  var list=S.vault.filter(function(v){
+    var mq=!q||(v.title||'').toLowerCase().includes(q.toLowerCase())||(v.body||'').toLowerCase().includes(q.toLowerCase())||(v.tags||[]).some(function(t){return t.toLowerCase().includes(q.toLowerCase())});
+    var mc=!cf||v.cat===cf;
+    return mq&&mc;
+  });
+  var cats=[...new Set(S.vault.map(function(v){return v.cat}))];
+  var tabEl=qs('vlt-cat-tabs');
+  tabEl.innerHTML=cats.map(function(c){
+    var col=VLT_CAT_COLORS[c]||'#888';
+    var active=cf===c;
+    return '<span onclick="toggleVltCat(\''+c+'\')" style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid '+col+(active?';background:'+col+';color:#fff':';color:'+col+';background:transparent')+'">'+c+'</span>';
+  }).join('');
+  var el=qs('vlt-list');
+  if(!list.length){el.innerHTML='<div class="empty">'+(!S.vault.length?'아직 아무것도 없어요. 첫 번째 지식을 추가해보세요!':'검색 결과가 없습니다.')+'</div>';return;}
+  el.innerHTML='<div style="columns:2;column-gap:14px">'+list.map(function(v){
+    var col=VLT_CAT_COLORS[v.cat]||'#888';
+    var ing=v.ingId?S.ingredients.find(function(i){return i.id===v.ingId}):null;
+    var preview=v.body?v.body.slice(0,140)+(v.body.length>140?'…':''):'';
+    return '<div class="list-item" style="break-inside:avoid;margin-bottom:12px;flex-direction:column;align-items:flex-start;cursor:default">'
+      +'<div style="display:flex;width:100%;align-items:flex-start;gap:8px">'
+      +'<div style="flex:1">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
+      +'<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:'+col+'22;color:'+col+';border:1px solid '+col+'55">'+v.cat+'</span>'
+      +'<span class="list-title" style="margin:0">'+v.title+'</span>'
+      +'</div>'
+      +(preview?'<p style="font-size:12px;color:var(--ink2);margin:0 0 6px;line-height:1.55">'+preview+'</p>':'')
+      +'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">'
+      +(v.tags||[]).map(function(t){return'<span class="tag tag-gray">'+t+'</span>'}).join('')
+      +(ing?'<span class="tag" style="background:var(--cream2);color:var(--ink);border:1px solid #c7d2fe">→ '+ing.name+'</span>':'')
+      +'</div>'
+      +(v.src?'<div style="font-size:10px;color:var(--ink3)">출처: '+v.src+'</div>':'')
+      +'</div>'
+      +'<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">'
+      +'<button class="btn" style="font-size:10px;padding:3px 8px" onclick="openVltModal(\''+v.id+'\')">편집</button>'
+      +'<button class="btn danger" style="font-size:10px;padding:3px 8px" onclick="deleteVlt(\''+v.id+'\')">삭제</button>'
+      +'</div>'
+      +'</div></div>';
+  }).join('')+'</div>';
+}
+function toggleVltCat(c){
+  var sel=qs('vlt-cat-f'); if(!sel)return;
+  sel.value=sel.value===c?'':c; renderVault();
+}
+qs('vlt-q').addEventListener('input',renderVault);
+qs('vlt-cat-f').addEventListener('change',renderVault);
+
+// ── INIT ─────────────────────────────────────────────────
+updateStats(); renderHome(); renderDash(); renderAccMetrics(); updateAccRadar();
+if(!S.vault.length){
+  S.vault=[
+    {id:uid(),title:'어코드 (Accord)',cat:'용어',tags:['기초','블렌딩'],body:'두 가지 이상의 향료를 조합해 하나의 새로운 향기 인상을 만들어낸 것. 단일 성분으로는 낼 수 없는 복합적인 향을 구현한다. 예: 장미 어코드, 바다 어코드.',src:'',ingId:'',updatedAt:new Date().toISOString()},
+    {id:uid(),title:'장 카를 기법 (Jean Carles Method)',cat:'기법',tags:['훈련','후각','기초'],body:'조향 교육의 기초 훈련법. 두 가지 향료를 다양한 비율(1:9, 2:8, 3:7...)로 섞어가며 각 비율에서 향이 어떻게 변하는지를 체계적으로 기록하는 방식. 후각 기억을 훈련하는 데 가장 효과적인 방법 중 하나.',src:'Perfumery Training, Jean Carles',ingId:'',updatedAt:new Date().toISOString()},
+    {id:uid(),title:'드라이다운 (Drydown)',cat:'용어',tags:['발향','시향'],body:'향수를 피부에 뿌린 후 알코올이 증발하고 탑노트가 사라진 뒤, 미들과 베이스 노트가 피부 온도와 반응하며 최종적으로 남는 향의 단계. 향수의 진짜 성격은 드라이다운에서 드러난다.',src:'',ingId:'',updatedAt:new Date().toISOString()},
+    {id:uid(),title:'RI (Retention Index)',cat:'화학',tags:['GC-MS','분석'],body:'GC(가스크로마토그래피) 분석에서 특정 분자가 컬럼을 통과하는 상대적 속도를 수치화한 것. 기기마다 절대 시간은 다르지만 RI 값은 동일한 컬럼 조건에서 일정하게 유지됨. 탑노트는 RI 800~1100, 미들 1100~1400, 베이스 1400 이상이 일반적.',src:'NIST Chemistry WebBook',ingId:'',updatedAt:new Date().toISOString()},
+    {id:uid(),title:'푸제르 (Fougère)',cat:'역사',tags:['향조','클래식'],body:'라벤더 + 오크모스 + 쿠마린의 조합을 기반으로 하는 향조. 1882년 우비강의 "Fougère Royale"에서 시작. 남성 향수의 뼈대가 되는 가장 중요한 향조 중 하나. 실제 양치류(fern) 향이 아닌 합성 향료로 구현된 최초의 현대적 향수로 평가받음.',src:'',ingId:'',updatedAt:new Date().toISOString()},
+    {id:uid(),title:'IFRA 가이드라인',cat:'화학',tags:['안전','규제','IFRA'],body:'국제향료협회(International Fragrance Association)가 제정한 향료 사용 안전 기준. 완제품 카테고리별(스킨케어, 헤어, 세탁 등)로 각 향료의 최대 사용 허용량을 규정. 알레르기 유발 물질 26종은 별도 표기 의무.',src:'www.ifrafragrance.org',ingId:'',updatedAt:new Date().toISOString()},
+  ];
+  persist();
+}
+</script>
+</body>
+</html>
